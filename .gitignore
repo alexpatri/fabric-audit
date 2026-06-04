@@ -10,3 +10,6 @@
 # Pacotes de chaincode e vendor (reproduzíveis)
 /network/*.tar.gz
 /chaincode/audit/vendor/
+
+# Binário do agente cliente
+/client/bin/

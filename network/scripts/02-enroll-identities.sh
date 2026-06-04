@@ -104,7 +104,10 @@ for org in "${APP_ORGS[@]}"; do
   enroll_msp "$org" "peer0-$org"  peer0pw  "$(peer_node_msp "$org")"
   enroll_tls "$org" "peer0-$org"  peer0pw  "$(peer_node_tls "$org")" "$(peer_host "$org")"
   enroll_msp "$org" "${org}admin" adminpw  "$(admin_msp "$org")"
-  echo "   ok peer+admin: $org"
+  # auditor-agent (type client, menor privilégio §13) — usado pelo agente capturador (Fase 5).
+  register_id "$org" "auditor-agent" agentpw client
+  enroll_msp "$org" "auditor-agent" agentpw "$(peer_base "$org")/users/auditor-agent@$org.$DOMAIN_SUFFIX/msp"
+  echo "   ok peer+admin+agent: $org"
 done
 
 # =================== MSPs nível-organização ====================

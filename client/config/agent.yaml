@@ -1,0 +1,26 @@
+# Config do agente capturador (Fase 5). Caminhos usam ${VAR} expandidos em runtime.
+# Requer: FABRIC_AUDIT_ROOT (raiz do repo fabric-audit) e WATCH_DIR (diretório monitorado).
+channel: audit-channel
+chaincode: audit-chaincode
+mspID: HospitalMSP
+
+gateway:
+  endpoint: localhost:7051
+  serverNameOverride: peer0.hospital.example.com
+  tlsCACertPath: ${FABRIC_AUDIT_ROOT}/network/organizations/peerOrganizations/hospital.example.com/peers/peer0.hospital.example.com/tls/ca.crt
+
+identity:
+  certPath: ${FABRIC_AUDIT_ROOT}/network/organizations/peerOrganizations/hospital.example.com/users/auditor-agent@hospital.example.com/msp/signcerts/cert.pem
+  keyPath: ${FABRIC_AUDIT_ROOT}/network/organizations/peerOrganizations/hospital.example.com/users/auditor-agent@hospital.example.com/msp/keystore
+
+endorsingOrgs:
+  - HospitalMSP
+  - GovernoMSP
+  - AuditoriaMSP
+
+watchDir: ${WATCH_DIR}
+actor: fileagent@hospital
+
+retry:
+  maxAttempts: 5
+  baseBackoffMs: 500

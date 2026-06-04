@@ -102,6 +102,26 @@ cd ../../network
 ./scripts/verify-validations.sh
 ```
 
+## Fase 5 — Agente capturador (Fabric Gateway SDK + inotify) (SPECS §11.5)
+
+Agente Go (`client/`) que monitora um diretório via inotify e submete `RegisterLog` ao
+`audit-channel`. Roda como Hospital (identidade `auditor-agent@hospital`).
+**Critério:** criar um arquivo no diretório monitorado gera uma transação commitada.
+
+```bash
+cd network
+# 1) enrola a identidade auditor-agent (idempotente)
+./scripts/02-enroll-identities.sh
+# 2) valida o critério (build do agente + cria arquivo + consulta o ledger)
+./scripts/verify-agent.sh
+```
+
+Para rodar o agente manualmente:
+```bash
+export FABRIC_AUDIT_ROOT=<raiz do fabric-audit>   WATCH_DIR=/algum/dir
+cd client && go run ./cmd/agent -config config/agent.yaml
+```
+
 ### Limpeza
 
 ```bash
@@ -119,5 +139,4 @@ cd ../../network
 
 ## Próximas fases
 
-5. Cliente de submissão (Fabric Gateway SDK + inotify).
 6. Testes de integridade. 7. Benchmarks (Caliper).
