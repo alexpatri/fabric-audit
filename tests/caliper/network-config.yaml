@@ -1,0 +1,32 @@
+# Caliper network config — conector Fabric gateway (formato Caliper 2.0.0).
+# Conecta a UM peer-gateway (peer0.hospital); o endosso das 3 orgs é resolvido server-side.
+# Material da identidade auditor-agent@hospital é copiado para ./crypto/ por run-benchmark.sh.
+name: audit-network
+version: "2.0.0"
+
+caliper:
+  blockchain: fabric
+  sutOptions:
+    mutualTls: false        # TLS server-side (orderer client-auth relaxado na Fase 3)
+
+channels:
+  - channelName: audit-channel
+    contracts:
+      - id: audit-chaincode
+
+organizations:
+  - mspid: HospitalMSP
+    identities:
+      certificates:
+        - name: auditor-agent
+          clientPrivateKey:
+            path: ./crypto/key.pem
+          clientSignedCert:
+            path: ./crypto/signcert.pem
+    peers:
+      - endpoint: localhost:7051
+        tlsCACerts:
+          path: ./crypto/tlsca.pem
+        grpcOptions:
+          ssl-target-name-override: peer0.hospital.example.com
+          grpc.keepalive_time_ms: 600000

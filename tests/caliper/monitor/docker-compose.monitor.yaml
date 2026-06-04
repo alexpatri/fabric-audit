@@ -1,0 +1,23 @@
+# Stack de observabilidade para o Caliper: Pushgateway (recebe push do Caliper) + Prometheus.
+# Anexado à rede fabric_audit para que o Prometheus alcance o pushgateway pelo nome.
+networks:
+  fabric_audit:
+    external: true
+    name: fabric_audit
+
+services:
+  pushgateway:
+    image: prom/pushgateway:v1.9.0
+    container_name: caliper-pushgateway
+    networks: [fabric_audit]
+    ports:
+      - "9091:9091"
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: caliper-prometheus
+    networks: [fabric_audit]
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml

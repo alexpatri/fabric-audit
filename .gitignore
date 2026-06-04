@@ -13,3 +13,11 @@
 
 # Binário do agente cliente
 /client/bin/
+
+# Caliper (Fase 7): deps, material copiado, relatórios e marcador de bind
+/tests/caliper/node_modules/
+/tests/caliper/crypto/
+/tests/caliper/results/
+/tests/caliper/.caliper-bound
+/tests/caliper/package-lock.json
+/tests/caliper/report*.html

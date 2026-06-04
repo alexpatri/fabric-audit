@@ -1,0 +1,22 @@
+# Cenário de degradação (§10.3): um round de escrita durante o qual run-benchmark.sh derruba
+# 1 orderer (orderer.notarial) por uma janela. BFT (f=1, 4 nós) tolera 1 falha → a rede segue;
+# mede-se o impacto em throughput/latência vs o sweep de mesma taxa.
+test:
+  name: audit-chaincode-degradation
+  description: Escrita sob queda de 1 orderer BFT
+  workers:
+    number: 2
+  rounds:
+    - label: degradation
+      txDuration: 90
+      rateControl: { type: fixed-rate, opts: { tps: 100 } }
+      workload: { module: workloads/register-log.js }
+
+monitors:
+  transaction:
+    - module: prometheus-push
+      options:
+        pushInterval: 3000
+        pushUrl: "http://localhost:9091"
+        histogramBuckets:
+          linear: { start: 0.05, width: 0.05, count: 100 }

@@ -1,0 +1,55 @@
+# Benchmark Caliper — execução representativa (rounds curtos). Para a matriz completa do §10.2/§10.3
+# (rounds de 5 min × 3 repetições), use txDuration: 300 e duplique cada round 3×. Ver README.
+# Monitor prometheus-push → Pushgateway → Prometheus (p50/p95/p99 via histogram_quantile).
+test:
+  name: audit-chaincode-benchmark
+  description: Benchmark do audit-chaincode (escrita, leitura, misto, varredura de carga)
+  workers:
+    number: 2
+  rounds:
+    # --- seed: escrita que popula os resources p/ os rounds de leitura/misto ---
+    - label: seed
+      txDuration: 60
+      rateControl: { type: fixed-rate, opts: { tps: 50 } }
+      workload: { module: workloads/register-log.js }
+
+    # --- varredura de carga (§10.3): escrita a 10/50/100/200 TPS ---
+    - label: sweep-10
+      txDuration: 45
+      rateControl: { type: fixed-rate, opts: { tps: 10 } }
+      workload: { module: workloads/register-log.js }
+    - label: sweep-50
+      txDuration: 45
+      rateControl: { type: fixed-rate, opts: { tps: 50 } }
+      workload: { module: workloads/register-log.js }
+    - label: sweep-100
+      txDuration: 45
+      rateControl: { type: fixed-rate, opts: { tps: 100 } }
+      workload: { module: workloads/register-log.js }
+    - label: sweep-200
+      txDuration: 45
+      rateControl: { type: fixed-rate, opts: { tps: 200 } }
+      workload: { module: workloads/register-log.js }
+
+    # --- leitura (readOnly) ---
+    - label: read
+      txDuration: 60
+      rateControl: { type: fixed-rate, opts: { tps: 100 } }
+      workload: { module: workloads/query-log.js }
+
+    # --- misto 80% escrita / 20% leitura ---
+    - label: mixed-80-20
+      txDuration: 60
+      rateControl: { type: fixed-rate, opts: { tps: 100 } }
+      workload:
+        module: workloads/mixed.js
+        arguments: { writeRatio: 0.8 }
+
+monitors:
+  transaction:
+    - module: prometheus-push
+      options:
+        pushInterval: 3000
+        pushUrl: "http://localhost:9091"
+        histogramBuckets:
+          linear: { start: 0.05, width: 0.05, count: 100 }   # 0.05s..5s p/ percentis precisos

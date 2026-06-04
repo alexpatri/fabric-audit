@@ -1,0 +1,14 @@
+{
+  "name": "caliper-audit",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Benchmarks Caliper para o audit-chaincode (Fabric v3.1.4, conector gateway)",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@grpc/grpc-js": "^1.13.1",
+    "@hyperledger/caliper-cli": "0.7.1",
+    "@hyperledger/fabric-gateway": "^1.7.1"
+  }
+}

@@ -148,6 +148,16 @@ Detalhes e fundamentação em [`tests/integrity/README.md`](../tests/integrity/R
 | Auditoria | CA 9054 / Orderer 9050  | 9053 |
 | Notarial  | CA 10054 / Orderer 10050 | 10053 |
 
-## Próximas fases
+## Fase 7 — Benchmarks de desempenho (Caliper) (SPECS §11.7 / §10.2)
 
-7. Benchmarks de desempenho (Hyperledger Caliper).
+Benchmarks com Hyperledger Caliper (conector gateway): workloads de escrita/leitura/misto,
+varredura de carga e queda de orderer; métricas com percentis via Prometheus.
+
+```bash
+bash ../tests/caliper/run-benchmark.sh    # rede + chaincode no ar; Node 20
+```
+Resultados e análise em [`tests/caliper/README.md`](../tests/caliper/README.md) e `tests/caliper/results/`.
+
+## Status
+
+Todas as 7 fases do SPECS (§11) concluídas e validadas.
