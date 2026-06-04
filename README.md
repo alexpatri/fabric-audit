@@ -83,6 +83,25 @@ docker compose up -d \
 ./scripts/verify-chaincode.sh
 ```
 
+## Fase 4 — Validações completas + queries + índices + testes (SPECS §11.4)
+
+Completa o chaincode: regras de validação §6.6, queries `QueryLogsByResource/Actor/TimeRange` e
+`GetLastHashForResource` (composite keys + índices CouchDB), e testes unitários ≥80%.
+**Critério:** cobertura de testes do pacote `contract/` ≥ 80%.
+
+```bash
+# 1) Testes unitários (critério) — mocks via counterfeiter
+cd chaincode/audit
+go install github.com/maxbrunsfeld/counterfeiter/v6@latest
+GOFLAGS=-mod=mod go generate ./contract/...     # (re)gera mocks/
+GOFLAGS=-mod=mod go test ./contract/... -cover  # deve reportar ≥ 80%
+
+# 2) Upgrade do chaincode para seq 2 (validações ativas) e demo de integração
+cd ../../network
+./scripts/04-deploy-chaincode.sh        # CC_VERSION=1.1, CC_SEQUENCE=2 (em env.sh)
+./scripts/verify-validations.sh
+```
+
 ### Limpeza
 
 ```bash
@@ -100,6 +119,5 @@ docker compose up -d \
 
 ## Próximas fases
 
-4. Validações completas + índices CouchDB.
 5. Cliente de submissão (Fabric Gateway SDK + inotify).
 6. Testes de integridade. 7. Benchmarks (Caliper).
