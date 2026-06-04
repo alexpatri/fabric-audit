@@ -63,10 +63,30 @@ docker pull couchdb:3.4.2
 ./scripts/verify-channel.sh
 ```
 
+## Fase 3 — Chaincode mínimo (SPECS §11.3)
+
+Implementa o chaincode Go `audit-chaincode` (lifecycle v2.x) com `RegisterLog` e `QueryLog`,
+instala/aprova/commita com a política `AND('HospitalMSP.peer','GovernoMSP.peer','AuditoriaMSP.peer')`.
+**Critério:** invocação manual via CLI registra e consulta um log.
+
+```bash
+cd network
+
+# (pré) os 3 peers precisam de acesso ao Docker (builder tradicional) — recria-os
+docker compose up -d \
+  peer0.hospital.example.com peer0.governo.example.com peer0.auditoria.example.com
+
+# 4) Empacota, instala, aprova (3 orgs) e commita
+./scripts/04-deploy-chaincode.sh
+
+# 5) Verifica o critério da Fase 3
+./scripts/verify-chaincode.sh
+```
+
 ### Limpeza
 
 ```bash
-./scripts/teardown.sh   # remove containers, volumes e material criptográfico gerado
+./scripts/teardown.sh   # remove containers, volumes, material criptográfico e chaincode dev-*
 ```
 
 ## Mapa de portas (Fase 1)
@@ -80,7 +100,6 @@ docker pull couchdb:3.4.2
 
 ## Próximas fases
 
-3. Chaincode mínimo (`RegisterLog`/`QueryLog`).
 4. Validações completas + índices CouchDB.
 5. Cliente de submissão (Fabric Gateway SDK + inotify).
 6. Testes de integridade. 7. Benchmarks (Caliper).

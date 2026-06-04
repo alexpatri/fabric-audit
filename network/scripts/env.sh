@@ -54,4 +54,39 @@ peer_base()     { echo "$ORG_DIR/peerOrganizations/$1.$DOMAIN_SUFFIX"; }
 peer_org_msp()  { echo "$(peer_base "$1")/msp"; }                    # MSP nível-org (grupo Application do canal)
 peer_node_msp() { echo "$(peer_base "$1")/peers/$(peer_host "$1")/msp"; }
 peer_node_tls() { echo "$(peer_base "$1")/peers/$(peer_host "$1")/tls"; }
+peer_tls_ca()   { echo "$(peer_node_tls "$1")/ca.crt"; }
 admin_msp()     { echo "$(peer_base "$1")/users/Admin@$1.$DOMAIN_SUFFIX/msp"; }
+
+# ---- Fase 3: chaincode / lifecycle ----
+CHANNEL="audit-channel"
+CC_NAME="audit-chaincode"
+CC_VERSION="1.0"
+CC_SEQUENCE="1"
+CC_LABEL="${CC_NAME}_${CC_VERSION}"
+CC_POLICY="AND('HospitalMSP.peer','GovernoMSP.peer','AuditoriaMSP.peer')"
+
+# Orderer usado para submeter transações (qualquer um dos 4 BFT serve).
+ORDERER_ENDPOINT="localhost:7050"
+ORDERER_OVERRIDE="orderer.hospital.example.com"
+orderer_ca() { echo "$(ord_tls hospital)/ca.crt"; }
+
+# Configura o ambiente do CLI `peer` para agir como Admin@<org>.
+set_peer_globals() {
+  local org="$1"
+  export FABRIC_CFG_PATH="$BIN_DIR/config"
+  export FABRIC_LOGGING_SPEC=error
+  export CORE_PEER_TLS_ENABLED=true
+  export CORE_PEER_LOCALMSPID="${MSPID[$org]}"
+  export CORE_PEER_TLS_ROOTCERT_FILE="$(peer_tls_ca "$org")"
+  export CORE_PEER_MSPCONFIGPATH="$(admin_msp "$org")"
+  export CORE_PEER_ADDRESS="localhost:${PEER_PORT[$org]}"
+}
+
+# Monta os argumentos --peerAddresses/--tlsRootCertFiles dos 3 peers de aplicação.
+peer_conn_args() {
+  local args=()
+  for o in "${APP_ORGS[@]}"; do
+    args+=(--peerAddresses "localhost:${PEER_PORT[$o]}" --tlsRootCertFiles "$(peer_tls_ca "$o")")
+  done
+  echo "${args[@]}"
+}

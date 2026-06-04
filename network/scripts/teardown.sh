@@ -9,6 +9,11 @@ cd "$NETWORK_DIR"
 echo ">> Derrubando containers e volumes nomeados..."
 docker compose down -v --remove-orphans || true
 
+echo ">> Removendo containers/imagens de chaincode (dev-*) lançados pelos peers..."
+docker rm -f $(docker ps -aq --filter "name=dev-peer0") 2>/dev/null || true
+docker rmi -f $(docker images -q --filter "reference=dev-peer0*") 2>/dev/null || true
+rm -f "$NETWORK_DIR"/*.tar.gz
+
 echo ">> Limpando material criptográfico gerado (fabric-ca/*, ordererOrganizations/*, peerOrganizations/*)..."
 # Arquivos da CA são criados como root no container; removemos via container para não exigir sudo.
 docker run --rm -v "$ORG_DIR":/org alpine:3 \

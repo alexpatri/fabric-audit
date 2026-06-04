@@ -113,8 +113,10 @@ services:
       - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
       - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
       - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
-      - ORDERER_GENERAL_TLS_CLIENTAUTHREQUIRED=true
-      - ORDERER_GENERAL_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      # Porta de serviço (broadcast/deliver): TLS com validação do servidor (sem client-auth).
+      # mTLS é mantido no endpoint admin e no cluster BFT (ConsenterMapping). Decisão de projeto
+      # que relaxa o SPECS §7.2 para client-orderer (ver docs/README).
+      - ORDERER_GENERAL_TLS_CLIENTAUTHREQUIRED=false
       - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:7053
       - ORDERER_ADMIN_TLS_ENABLED=true
       - ORDERER_ADMIN_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
@@ -151,8 +153,10 @@ services:
       - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
       - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
       - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
-      - ORDERER_GENERAL_TLS_CLIENTAUTHREQUIRED=true
-      - ORDERER_GENERAL_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      # Porta de serviço (broadcast/deliver): TLS com validação do servidor (sem client-auth).
+      # mTLS é mantido no endpoint admin e no cluster BFT (ConsenterMapping). Decisão de projeto
+      # que relaxa o SPECS §7.2 para client-orderer (ver docs/README).
+      - ORDERER_GENERAL_TLS_CLIENTAUTHREQUIRED=false
       - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:8053
       - ORDERER_ADMIN_TLS_ENABLED=true
       - ORDERER_ADMIN_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
@@ -189,8 +193,10 @@ services:
       - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
       - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
       - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
-      - ORDERER_GENERAL_TLS_CLIENTAUTHREQUIRED=true
-      - ORDERER_GENERAL_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      # Porta de serviço (broadcast/deliver): TLS com validação do servidor (sem client-auth).
+      # mTLS é mantido no endpoint admin e no cluster BFT (ConsenterMapping). Decisão de projeto
+      # que relaxa o SPECS §7.2 para client-orderer (ver docs/README).
+      - ORDERER_GENERAL_TLS_CLIENTAUTHREQUIRED=false
       - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:9053
       - ORDERER_ADMIN_TLS_ENABLED=true
       - ORDERER_ADMIN_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
@@ -227,8 +233,10 @@ services:
       - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
       - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
       - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
-      - ORDERER_GENERAL_TLS_CLIENTAUTHREQUIRED=true
-      - ORDERER_GENERAL_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      # Porta de serviço (broadcast/deliver): TLS com validação do servidor (sem client-auth).
+      # mTLS é mantido no endpoint admin e no cluster BFT (ConsenterMapping). Decisão de projeto
+      # que relaxa o SPECS §7.2 para client-orderer (ver docs/README).
+      - ORDERER_GENERAL_TLS_CLIENTAUTHREQUIRED=false
       - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:10053
       - ORDERER_ADMIN_TLS_ENABLED=true
       - ORDERER_ADMIN_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
@@ -319,6 +327,9 @@ services:
       - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
       - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
       - CORE_PEER_FILESYSTEMPATH=/var/hyperledger/production
+      # Builder tradicional de chaincode (peer constrói/sobe o container via Docker)
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric_audit
       - FABRIC_LOGGING_SPEC=INFO
     ports:
       - "7051:7051"
@@ -326,6 +337,7 @@ services:
       - ./organizations/peerOrganizations/hospital.example.com/peers/peer0.hospital.example.com/msp:/etc/hyperledger/fabric/msp
       - ./organizations/peerOrganizations/hospital.example.com/peers/peer0.hospital.example.com/tls:/etc/hyperledger/fabric/tls
       - peer0.hospital.example.com:/var/hyperledger/production
+      - /var/run/docker.sock:/host/var/run/docker.sock
 
   peer0.governo.example.com:
     image: hyperledger/fabric-peer:3.1.4
@@ -353,6 +365,9 @@ services:
       - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
       - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
       - CORE_PEER_FILESYSTEMPATH=/var/hyperledger/production
+      # Builder tradicional de chaincode (peer constrói/sobe o container via Docker)
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric_audit
       - FABRIC_LOGGING_SPEC=INFO
     ports:
       - "9051:9051"
@@ -360,6 +375,7 @@ services:
       - ./organizations/peerOrganizations/governo.example.com/peers/peer0.governo.example.com/msp:/etc/hyperledger/fabric/msp
       - ./organizations/peerOrganizations/governo.example.com/peers/peer0.governo.example.com/tls:/etc/hyperledger/fabric/tls
       - peer0.governo.example.com:/var/hyperledger/production
+      - /var/run/docker.sock:/host/var/run/docker.sock
 
   peer0.auditoria.example.com:
     image: hyperledger/fabric-peer:3.1.4
@@ -387,6 +403,9 @@ services:
       - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
       - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
       - CORE_PEER_FILESYSTEMPATH=/var/hyperledger/production
+      # Builder tradicional de chaincode (peer constrói/sobe o container via Docker)
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric_audit
       - FABRIC_LOGGING_SPEC=INFO
     ports:
       - "11051:11051"
@@ -394,3 +413,4 @@ services:
       - ./organizations/peerOrganizations/auditoria.example.com/peers/peer0.auditoria.example.com/msp:/etc/hyperledger/fabric/msp
       - ./organizations/peerOrganizations/auditoria.example.com/peers/peer0.auditoria.example.com/tls:/etc/hyperledger/fabric/tls
       - peer0.auditoria.example.com:/var/hyperledger/production
+      - /var/run/docker.sock:/host/var/run/docker.sock

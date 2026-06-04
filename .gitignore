@@ -6,3 +6,7 @@
 /network/organizations/ordererOrganizations/
 /network/organizations/peerOrganizations/
 /network/system-genesis-block/*.block
+
+# Pacotes de chaincode e vendor (reproduzíveis)
+/network/*.tar.gz
+/chaincode/audit/vendor/
