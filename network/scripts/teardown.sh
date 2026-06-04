@@ -9,9 +9,12 @@ cd "$NETWORK_DIR"
 echo ">> Derrubando containers e volumes nomeados..."
 docker compose down -v --remove-orphans || true
 
-echo ">> Limpando material criptográfico gerado (fabric-ca/* e ordererOrganizations/*)..."
+echo ">> Limpando material criptográfico gerado (fabric-ca/*, ordererOrganizations/*, peerOrganizations/*)..."
 # Arquivos da CA são criados como root no container; removemos via container para não exigir sudo.
 docker run --rm -v "$ORG_DIR":/org alpine:3 \
-  sh -c 'rm -rf /org/fabric-ca/*/* /org/ordererOrganizations/* 2>/dev/null; true'
+  sh -c 'rm -rf /org/fabric-ca/*/* /org/ordererOrganizations/* /org/peerOrganizations/* 2>/dev/null; true'
+
+echo ">> Limpando bloco gênese do canal..."
+rm -f "$NETWORK_DIR"/system-genesis-block/*.block
 
 echo ">> Teardown concluído."

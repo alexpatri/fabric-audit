@@ -36,6 +36,22 @@ ca_name()   { echo "ca-$1"; }
 # Caminhos de material por organização
 ca_home()   { echo "$ORG_DIR/fabric-ca/$1"; }
 ca_tlscert(){ echo "$(ca_home "$1")/tls-cert.pem"; }                 # TLS do endpoint da CA (p/ --tls.certfiles)
+ca_cert()   { echo "$(ca_home "$1")/ca-cert.pem"; }                  # cert de assinatura da CA (raiz do MSP)
 ord_base()  { echo "$ORG_DIR/ordererOrganizations/$1.$DOMAIN_SUFFIX"; }
 ord_msp()   { echo "$(ord_base "$1")/orderers/$(ord_host "$1")/msp"; }
 ord_tls()   { echo "$(ord_base "$1")/orderers/$(ord_host "$1")/tls"; }
+ord_org_msp(){ echo "$(ord_base "$1")/msp"; }                        # MSP nível-org (grupo Orderer do canal)
+
+# ---- Fase 2: peers / aplicação ----
+APP_ORGS=(hospital governo auditoria)
+declare -A PEER_PORT=(   [hospital]=7051  [governo]=9051  [auditoria]=11051 )
+declare -A PEER_CC_PORT=([hospital]=7052  [governo]=9052  [auditoria]=11052 )
+declare -A COUCH_PORT=(  [hospital]=5984  [governo]=6984  [auditoria]=7984  )
+
+peer_host()     { echo "peer0.$1.$DOMAIN_SUFFIX"; }
+couch_host()    { echo "couchdb.$1"; }
+peer_base()     { echo "$ORG_DIR/peerOrganizations/$1.$DOMAIN_SUFFIX"; }
+peer_org_msp()  { echo "$(peer_base "$1")/msp"; }                    # MSP nível-org (grupo Application do canal)
+peer_node_msp() { echo "$(peer_base "$1")/peers/$(peer_host "$1")/msp"; }
+peer_node_tls() { echo "$(peer_base "$1")/peers/$(peer_host "$1")/tls"; }
+admin_msp()     { echo "$(peer_base "$1")/users/Admin@$1.$DOMAIN_SUFFIX/msp"; }

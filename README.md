@@ -40,6 +40,29 @@ docker compose up -d \
 
 Saída esperada por ordenador: `{"systemChannel":null,"channels":[]}` (HTTP 200).
 
+## Fase 2 — Peers e canal `audit-channel` (SPECS §11.2)
+
+Sobe os 3 peers + CouchDBs, cria o canal `audit-channel` (BFT, capability `V3_0`) e faz os
+peers ingressarem. **Critério:** `peer channel list` mostra `audit-channel` em cada peer.
+
+```bash
+cd network
+
+# (pré) imagem do CouchDB
+docker pull couchdb:3.4.2
+
+# 2) Enrola também peer0 + Admin das 3 app orgs e monta os MSPs de organização
+#    (idempotente: não regenera as identidades dos orderers da Fase 1)
+./scripts/02-enroll-identities.sh
+
+# 3) Cria o canal e faz os peers ingressarem
+#    (recria orderers c/ cluster BFT, gera gênese, osnadmin join, sobe peers/couchdb, peer join)
+./scripts/03-create-channel.sh
+
+# 4) Verifica o critério da Fase 2
+./scripts/verify-channel.sh
+```
+
 ### Limpeza
 
 ```bash
@@ -57,7 +80,6 @@ Saída esperada por ordenador: `{"systemChannel":null,"channels":[]}` (HTTP 200)
 
 ## Próximas fases
 
-2. Peers + CouchDB e criação do canal `audit-channel` (inclui `configtx.yaml` + `ConsenterMapping`).
 3. Chaincode mínimo (`RegisterLog`/`QueryLog`).
 4. Validações completas + índices CouchDB.
 5. Cliente de submissão (Fabric Gateway SDK + inotify).

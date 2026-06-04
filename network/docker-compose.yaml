@@ -11,6 +11,12 @@ volumes:
   orderer.governo.example.com:
   orderer.auditoria.example.com:
   orderer.notarial.example.com:
+  peer0.hospital.example.com:
+  peer0.governo.example.com:
+  peer0.auditoria.example.com:
+  couchdb.hospital:
+  couchdb.governo:
+  couchdb.auditoria:
 
 # ---- Bases reutilizáveis ----
 x-ca-common: &ca-common
@@ -116,6 +122,10 @@ services:
       - ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
       - ORDERER_ADMIN_TLS_CLIENTAUTHREQUIRED=true
       - ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      # Comunicação intra-cluster BFT (mesmo par TLS do servidor)
+      - ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_CLUSTER_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
       - FABRIC_LOGGING_SPEC=INFO
     ports:
       - "7050:7050"
@@ -150,6 +160,10 @@ services:
       - ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
       - ORDERER_ADMIN_TLS_CLIENTAUTHREQUIRED=true
       - ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      # Comunicação intra-cluster BFT (mesmo par TLS do servidor)
+      - ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_CLUSTER_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
       - FABRIC_LOGGING_SPEC=INFO
     ports:
       - "8050:8050"
@@ -184,6 +198,10 @@ services:
       - ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
       - ORDERER_ADMIN_TLS_CLIENTAUTHREQUIRED=true
       - ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      # Comunicação intra-cluster BFT (mesmo par TLS do servidor)
+      - ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_CLUSTER_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
       - FABRIC_LOGGING_SPEC=INFO
     ports:
       - "9050:9050"
@@ -218,6 +236,10 @@ services:
       - ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
       - ORDERER_ADMIN_TLS_CLIENTAUTHREQUIRED=true
       - ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      # Comunicação intra-cluster BFT (mesmo par TLS do servidor)
+      - ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_CLUSTER_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
       - FABRIC_LOGGING_SPEC=INFO
     ports:
       - "10050:10050"
@@ -226,3 +248,149 @@ services:
       - ./organizations/ordererOrganizations/notarial.example.com/orderers/orderer.notarial.example.com/msp:/var/hyperledger/orderer/msp
       - ./organizations/ordererOrganizations/notarial.example.com/orderers/orderer.notarial.example.com/tls:/var/hyperledger/orderer/tls
       - orderer.notarial.example.com:/var/hyperledger/production
+
+  # ============================= CouchDB =============================
+  couchdb.hospital:
+    image: couchdb:3.4.2
+    container_name: couchdb.hospital
+    hostname: couchdb.hospital
+    restart: unless-stopped
+    networks: [fabric_audit]
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=adminpw
+    ports:
+      - "5984:5984"
+    volumes:
+      - couchdb.hospital:/opt/couchdb/data
+
+  couchdb.governo:
+    image: couchdb:3.4.2
+    container_name: couchdb.governo
+    hostname: couchdb.governo
+    restart: unless-stopped
+    networks: [fabric_audit]
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=adminpw
+    ports:
+      - "6984:5984"
+    volumes:
+      - couchdb.governo:/opt/couchdb/data
+
+  couchdb.auditoria:
+    image: couchdb:3.4.2
+    container_name: couchdb.auditoria
+    hostname: couchdb.auditoria
+    restart: unless-stopped
+    networks: [fabric_audit]
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=adminpw
+    ports:
+      - "7984:5984"
+    volumes:
+      - couchdb.auditoria:/opt/couchdb/data
+
+  # ============================== Peers ==============================
+  peer0.hospital.example.com:
+    image: hyperledger/fabric-peer:3.1.4
+    container_name: peer0.hospital.example.com
+    hostname: peer0.hospital.example.com
+    restart: unless-stopped
+    networks: [fabric_audit]
+    depends_on: [couchdb.hospital]
+    environment:
+      - CORE_PEER_ID=peer0.hospital.example.com
+      - CORE_PEER_ADDRESS=peer0.hospital.example.com:7051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:7051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.hospital.example.com:7052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.hospital.example.com:7051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.hospital.example.com:7051
+      - CORE_PEER_LOCALMSPID=HospitalMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb.hospital:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
+      - CORE_PEER_FILESYSTEMPATH=/var/hyperledger/production
+      - FABRIC_LOGGING_SPEC=INFO
+    ports:
+      - "7051:7051"
+    volumes:
+      - ./organizations/peerOrganizations/hospital.example.com/peers/peer0.hospital.example.com/msp:/etc/hyperledger/fabric/msp
+      - ./organizations/peerOrganizations/hospital.example.com/peers/peer0.hospital.example.com/tls:/etc/hyperledger/fabric/tls
+      - peer0.hospital.example.com:/var/hyperledger/production
+
+  peer0.governo.example.com:
+    image: hyperledger/fabric-peer:3.1.4
+    container_name: peer0.governo.example.com
+    hostname: peer0.governo.example.com
+    restart: unless-stopped
+    networks: [fabric_audit]
+    depends_on: [couchdb.governo]
+    environment:
+      - CORE_PEER_ID=peer0.governo.example.com
+      - CORE_PEER_ADDRESS=peer0.governo.example.com:9051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:9051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.governo.example.com:9052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:9052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.governo.example.com:9051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.governo.example.com:9051
+      - CORE_PEER_LOCALMSPID=GovernoMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb.governo:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
+      - CORE_PEER_FILESYSTEMPATH=/var/hyperledger/production
+      - FABRIC_LOGGING_SPEC=INFO
+    ports:
+      - "9051:9051"
+    volumes:
+      - ./organizations/peerOrganizations/governo.example.com/peers/peer0.governo.example.com/msp:/etc/hyperledger/fabric/msp
+      - ./organizations/peerOrganizations/governo.example.com/peers/peer0.governo.example.com/tls:/etc/hyperledger/fabric/tls
+      - peer0.governo.example.com:/var/hyperledger/production
+
+  peer0.auditoria.example.com:
+    image: hyperledger/fabric-peer:3.1.4
+    container_name: peer0.auditoria.example.com
+    hostname: peer0.auditoria.example.com
+    restart: unless-stopped
+    networks: [fabric_audit]
+    depends_on: [couchdb.auditoria]
+    environment:
+      - CORE_PEER_ID=peer0.auditoria.example.com
+      - CORE_PEER_ADDRESS=peer0.auditoria.example.com:11051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:11051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.auditoria.example.com:11052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:11052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.auditoria.example.com:11051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.auditoria.example.com:11051
+      - CORE_PEER_LOCALMSPID=AuditoriaMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb.auditoria:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
+      - CORE_PEER_FILESYSTEMPATH=/var/hyperledger/production
+      - FABRIC_LOGGING_SPEC=INFO
+    ports:
+      - "11051:11051"
+    volumes:
+      - ./organizations/peerOrganizations/auditoria.example.com/peers/peer0.auditoria.example.com/msp:/etc/hyperledger/fabric/msp
+      - ./organizations/peerOrganizations/auditoria.example.com/peers/peer0.auditoria.example.com/tls:/etc/hyperledger/fabric/tls
+      - peer0.auditoria.example.com:/var/hyperledger/production

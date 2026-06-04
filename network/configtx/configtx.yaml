@@ -1,0 +1,235 @@
+# configtx.yaml — perfil do canal `audit-channel` (SPECS §4, §5).
+# Ordenação BFT (SmartBFT) com 4 consenters; capability de canal V3_0.
+# Paths relativos a FABRIC_CFG_PATH (= este diretório, network/configtx).
+
+################################################################################
+#   ORGANIZATIONS
+################################################################################
+Organizations:
+  - &HospitalOrg
+    Name: HospitalMSP
+    ID: HospitalMSP
+    MSPDir: ../organizations/peerOrganizations/hospital.example.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('HospitalMSP.admin', 'HospitalMSP.peer', 'HospitalMSP.client', 'HospitalMSP.orderer')"
+      Writers:
+        Type: Signature
+        Rule: "OR('HospitalMSP.admin', 'HospitalMSP.client', 'HospitalMSP.orderer')"
+      Admins:
+        Type: Signature
+        Rule: "OR('HospitalMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('HospitalMSP.peer')"
+    OrdererEndpoints:
+      - orderer.hospital.example.com:7050
+
+  - &GovernoOrg
+    Name: GovernoMSP
+    ID: GovernoMSP
+    MSPDir: ../organizations/peerOrganizations/governo.example.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('GovernoMSP.admin', 'GovernoMSP.peer', 'GovernoMSP.client', 'GovernoMSP.orderer')"
+      Writers:
+        Type: Signature
+        Rule: "OR('GovernoMSP.admin', 'GovernoMSP.client', 'GovernoMSP.orderer')"
+      Admins:
+        Type: Signature
+        Rule: "OR('GovernoMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('GovernoMSP.peer')"
+    OrdererEndpoints:
+      - orderer.governo.example.com:8050
+
+  - &AuditoriaOrg
+    Name: AuditoriaMSP
+    ID: AuditoriaMSP
+    MSPDir: ../organizations/peerOrganizations/auditoria.example.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('AuditoriaMSP.admin', 'AuditoriaMSP.peer', 'AuditoriaMSP.client', 'AuditoriaMSP.orderer')"
+      Writers:
+        Type: Signature
+        Rule: "OR('AuditoriaMSP.admin', 'AuditoriaMSP.client', 'AuditoriaMSP.orderer')"
+      Admins:
+        Type: Signature
+        Rule: "OR('AuditoriaMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('AuditoriaMSP.peer')"
+    OrdererEndpoints:
+      - orderer.auditoria.example.com:9050
+
+  - &NotarialOrg
+    Name: NotarialMSP
+    ID: NotarialMSP
+    MSPDir: ../organizations/ordererOrganizations/notarial.example.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('NotarialMSP.member')"
+      Writers:
+        Type: Signature
+        Rule: "OR('NotarialMSP.member')"
+      Admins:
+        Type: Signature
+        Rule: "OR('NotarialMSP.admin')"
+    OrdererEndpoints:
+      - orderer.notarial.example.com:10050
+
+################################################################################
+#   CAPABILITIES
+################################################################################
+Capabilities:
+  Channel: &ChannelCapabilities
+    V3_0: true          # obrigatória para SmartBFT (SPECS §2.1)
+  Orderer: &OrdererCapabilities
+    V2_0: true
+  Application: &ApplicationCapabilities
+    V2_0: true          # habilita o lifecycle de chaincode v2.x (SPECS §6.1)
+
+################################################################################
+#   APPLICATION
+################################################################################
+Application: &ApplicationDefaults
+  Organizations:
+  Policies:
+    LifecycleEndorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+    Endorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+  Capabilities:
+    <<: *ApplicationCapabilities
+
+################################################################################
+#   ORDERER (BFT / SmartBFT — SPECS §4)
+################################################################################
+Orderer: &OrdererDefaults
+  OrdererType: BFT
+  BatchTimeout: 2s
+  BatchSize:
+    MaxMessageCount: 10
+    AbsoluteMaxBytes: 99 MB
+    PreferredMaxBytes: 512 KB
+  # Consenters BFT: 1 por organização. Identity = enrollment cert do orderer;
+  # Client/ServerTLSCert = par TLS do orderer (server.crt).
+  ConsenterMapping:
+    - ID: 1
+      Host: orderer.hospital.example.com
+      Port: 7050
+      MSPID: HospitalMSP
+      Identity: ../organizations/ordererOrganizations/hospital.example.com/orderers/orderer.hospital.example.com/msp/signcerts/cert.pem
+      ClientTLSCert: ../organizations/ordererOrganizations/hospital.example.com/orderers/orderer.hospital.example.com/tls/server.crt
+      ServerTLSCert: ../organizations/ordererOrganizations/hospital.example.com/orderers/orderer.hospital.example.com/tls/server.crt
+    - ID: 2
+      Host: orderer.governo.example.com
+      Port: 8050
+      MSPID: GovernoMSP
+      Identity: ../organizations/ordererOrganizations/governo.example.com/orderers/orderer.governo.example.com/msp/signcerts/cert.pem
+      ClientTLSCert: ../organizations/ordererOrganizations/governo.example.com/orderers/orderer.governo.example.com/tls/server.crt
+      ServerTLSCert: ../organizations/ordererOrganizations/governo.example.com/orderers/orderer.governo.example.com/tls/server.crt
+    - ID: 3
+      Host: orderer.auditoria.example.com
+      Port: 9050
+      MSPID: AuditoriaMSP
+      Identity: ../organizations/ordererOrganizations/auditoria.example.com/orderers/orderer.auditoria.example.com/msp/signcerts/cert.pem
+      ClientTLSCert: ../organizations/ordererOrganizations/auditoria.example.com/orderers/orderer.auditoria.example.com/tls/server.crt
+      ServerTLSCert: ../organizations/ordererOrganizations/auditoria.example.com/orderers/orderer.auditoria.example.com/tls/server.crt
+    - ID: 4
+      Host: orderer.notarial.example.com
+      Port: 10050
+      MSPID: NotarialMSP
+      Identity: ../organizations/ordererOrganizations/notarial.example.com/orderers/orderer.notarial.example.com/msp/signcerts/cert.pem
+      ClientTLSCert: ../organizations/ordererOrganizations/notarial.example.com/orderers/orderer.notarial.example.com/tls/server.crt
+      ServerTLSCert: ../organizations/ordererOrganizations/notarial.example.com/orderers/orderer.notarial.example.com/tls/server.crt
+  SmartBFT:
+    RequestBatchMaxInterval: 200ms
+    RequestForwardTimeout: 5s
+    RequestComplainTimeout: 20s
+    RequestAutoRemoveTimeout: 3m0s
+    ViewChangeResendInterval: 5s
+    ViewChangeTimeout: 20s
+    LeaderHeartbeatTimeout: 1m0s
+    CollectTimeout: 1s
+    IncomingMessageBufferSize: 200
+    RequestPoolSize: 100000
+    LeaderHeartbeatCount: 10
+  Organizations:
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+    BlockValidation:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+  Capabilities:
+    <<: *OrdererCapabilities
+
+################################################################################
+#   CHANNEL
+################################################################################
+Channel: &ChannelDefaults
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+  Capabilities:
+    <<: *ChannelCapabilities
+
+################################################################################
+#   PROFILES
+################################################################################
+Profiles:
+  AuditChannel:
+    <<: *ChannelDefaults
+    Orderer:
+      <<: *OrdererDefaults
+      Organizations:
+        - *HospitalOrg
+        - *GovernoOrg
+        - *AuditoriaOrg
+        - *NotarialOrg
+    Application:
+      <<: *ApplicationDefaults
+      Organizations:
+        - <<: *HospitalOrg
+          AnchorPeers:
+            - Host: peer0.hospital.example.com
+              Port: 7051
+        - <<: *GovernoOrg
+          AnchorPeers:
+            - Host: peer0.governo.example.com
+              Port: 9051
+        - <<: *AuditoriaOrg
+          AnchorPeers:
+            - Host: peer0.auditoria.example.com
+              Port: 11051
