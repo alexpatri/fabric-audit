@@ -1,0 +1,228 @@
+# Fase 1 — Bootstrap da rede mínima (SPECS §11.1)
+# 4 Fabric CAs (1.5.19) + 4 ordenadores BFT (3.1.4), um por organização.
+# Sem canal nesta fase: orderers iniciam "nus" (channel participation API).
+
+networks:
+  fabric_audit:
+    name: fabric_audit
+
+volumes:
+  orderer.hospital.example.com:
+  orderer.governo.example.com:
+  orderer.auditoria.example.com:
+  orderer.notarial.example.com:
+
+# ---- Bases reutilizáveis ----
+x-ca-common: &ca-common
+  image: hyperledger/fabric-ca:1.5.19
+  command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
+  restart: unless-stopped
+  networks: [fabric_audit]
+
+x-orderer-common: &orderer-common
+  image: hyperledger/fabric-orderer:3.1.4
+  restart: unless-stopped
+  networks: [fabric_audit]
+
+services:
+  # ============================ Fabric CAs ============================
+  ca.hospital.example.com:
+    <<: *ca-common
+    container_name: ca.hospital.example.com
+    hostname: ca.hospital.example.com
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca-hospital
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=7054
+      - FABRIC_CA_SERVER_CSR_CN=ca.hospital.example.com
+      - FABRIC_CA_SERVER_CSR_HOSTS=ca.hospital.example.com,localhost,127.0.0.1
+    ports:
+      - "7054:7054"
+    volumes:
+      - ./organizations/fabric-ca/hospital:/etc/hyperledger/fabric-ca-server
+
+  ca.governo.example.com:
+    <<: *ca-common
+    container_name: ca.governo.example.com
+    hostname: ca.governo.example.com
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca-governo
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=8054
+      - FABRIC_CA_SERVER_CSR_CN=ca.governo.example.com
+      - FABRIC_CA_SERVER_CSR_HOSTS=ca.governo.example.com,localhost,127.0.0.1
+    ports:
+      - "8054:8054"
+    volumes:
+      - ./organizations/fabric-ca/governo:/etc/hyperledger/fabric-ca-server
+
+  ca.auditoria.example.com:
+    <<: *ca-common
+    container_name: ca.auditoria.example.com
+    hostname: ca.auditoria.example.com
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca-auditoria
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=9054
+      - FABRIC_CA_SERVER_CSR_CN=ca.auditoria.example.com
+      - FABRIC_CA_SERVER_CSR_HOSTS=ca.auditoria.example.com,localhost,127.0.0.1
+    ports:
+      - "9054:9054"
+    volumes:
+      - ./organizations/fabric-ca/auditoria:/etc/hyperledger/fabric-ca-server
+
+  ca.notarial.example.com:
+    <<: *ca-common
+    container_name: ca.notarial.example.com
+    hostname: ca.notarial.example.com
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca-notarial
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=10054
+      - FABRIC_CA_SERVER_CSR_CN=ca.notarial.example.com
+      - FABRIC_CA_SERVER_CSR_HOSTS=ca.notarial.example.com,localhost,127.0.0.1
+    ports:
+      - "10054:10054"
+    volumes:
+      - ./organizations/fabric-ca/notarial:/etc/hyperledger/fabric-ca-server
+
+  # ========================== Orderers BFT ===========================
+  orderer.hospital.example.com:
+    <<: *orderer-common
+    container_name: orderer.hospital.example.com
+    hostname: orderer.hospital.example.com
+    environment:
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_LISTENPORT=7050
+      - ORDERER_GENERAL_LOCALMSPID=HospitalMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
+      - ORDERER_GENERAL_BOOTSTRAPMETHOD=none
+      - ORDERER_CHANNELPARTICIPATION_ENABLED=true
+      - ORDERER_FILELEDGER_LOCATION=/var/hyperledger/production/orderer
+      - ORDERER_GENERAL_TLS_ENABLED=true
+      - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_GENERAL_TLS_CLIENTAUTHREQUIRED=true
+      - ORDERER_GENERAL_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:7053
+      - ORDERER_ADMIN_TLS_ENABLED=true
+      - ORDERER_ADMIN_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_ADMIN_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_TLS_CLIENTAUTHREQUIRED=true
+      - ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - FABRIC_LOGGING_SPEC=INFO
+    ports:
+      - "7050:7050"
+      - "7053:7053"
+    volumes:
+      - ./organizations/ordererOrganizations/hospital.example.com/orderers/orderer.hospital.example.com/msp:/var/hyperledger/orderer/msp
+      - ./organizations/ordererOrganizations/hospital.example.com/orderers/orderer.hospital.example.com/tls:/var/hyperledger/orderer/tls
+      - orderer.hospital.example.com:/var/hyperledger/production
+
+  orderer.governo.example.com:
+    <<: *orderer-common
+    container_name: orderer.governo.example.com
+    hostname: orderer.governo.example.com
+    environment:
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_LISTENPORT=8050
+      - ORDERER_GENERAL_LOCALMSPID=GovernoMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
+      - ORDERER_GENERAL_BOOTSTRAPMETHOD=none
+      - ORDERER_CHANNELPARTICIPATION_ENABLED=true
+      - ORDERER_FILELEDGER_LOCATION=/var/hyperledger/production/orderer
+      - ORDERER_GENERAL_TLS_ENABLED=true
+      - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_GENERAL_TLS_CLIENTAUTHREQUIRED=true
+      - ORDERER_GENERAL_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:8053
+      - ORDERER_ADMIN_TLS_ENABLED=true
+      - ORDERER_ADMIN_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_ADMIN_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_TLS_CLIENTAUTHREQUIRED=true
+      - ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - FABRIC_LOGGING_SPEC=INFO
+    ports:
+      - "8050:8050"
+      - "8053:8053"
+    volumes:
+      - ./organizations/ordererOrganizations/governo.example.com/orderers/orderer.governo.example.com/msp:/var/hyperledger/orderer/msp
+      - ./organizations/ordererOrganizations/governo.example.com/orderers/orderer.governo.example.com/tls:/var/hyperledger/orderer/tls
+      - orderer.governo.example.com:/var/hyperledger/production
+
+  orderer.auditoria.example.com:
+    <<: *orderer-common
+    container_name: orderer.auditoria.example.com
+    hostname: orderer.auditoria.example.com
+    environment:
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_LISTENPORT=9050
+      - ORDERER_GENERAL_LOCALMSPID=AuditoriaMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
+      - ORDERER_GENERAL_BOOTSTRAPMETHOD=none
+      - ORDERER_CHANNELPARTICIPATION_ENABLED=true
+      - ORDERER_FILELEDGER_LOCATION=/var/hyperledger/production/orderer
+      - ORDERER_GENERAL_TLS_ENABLED=true
+      - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_GENERAL_TLS_CLIENTAUTHREQUIRED=true
+      - ORDERER_GENERAL_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:9053
+      - ORDERER_ADMIN_TLS_ENABLED=true
+      - ORDERER_ADMIN_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_ADMIN_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_TLS_CLIENTAUTHREQUIRED=true
+      - ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - FABRIC_LOGGING_SPEC=INFO
+    ports:
+      - "9050:9050"
+      - "9053:9053"
+    volumes:
+      - ./organizations/ordererOrganizations/auditoria.example.com/orderers/orderer.auditoria.example.com/msp:/var/hyperledger/orderer/msp
+      - ./organizations/ordererOrganizations/auditoria.example.com/orderers/orderer.auditoria.example.com/tls:/var/hyperledger/orderer/tls
+      - orderer.auditoria.example.com:/var/hyperledger/production
+
+  orderer.notarial.example.com:
+    <<: *orderer-common
+    container_name: orderer.notarial.example.com
+    hostname: orderer.notarial.example.com
+    environment:
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_LISTENPORT=10050
+      - ORDERER_GENERAL_LOCALMSPID=NotarialMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
+      - ORDERER_GENERAL_BOOTSTRAPMETHOD=none
+      - ORDERER_CHANNELPARTICIPATION_ENABLED=true
+      - ORDERER_FILELEDGER_LOCATION=/var/hyperledger/production/orderer
+      - ORDERER_GENERAL_TLS_ENABLED=true
+      - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_GENERAL_TLS_CLIENTAUTHREQUIRED=true
+      - ORDERER_GENERAL_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:10053
+      - ORDERER_ADMIN_TLS_ENABLED=true
+      - ORDERER_ADMIN_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_ADMIN_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_TLS_CLIENTAUTHREQUIRED=true
+      - ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - FABRIC_LOGGING_SPEC=INFO
+    ports:
+      - "10050:10050"
+      - "10053:10053"
+    volumes:
+      - ./organizations/ordererOrganizations/notarial.example.com/orderers/orderer.notarial.example.com/msp:/var/hyperledger/orderer/msp
+      - ./organizations/ordererOrganizations/notarial.example.com/orderers/orderer.notarial.example.com/tls:/var/hyperledger/orderer/tls
+      - orderer.notarial.example.com:/var/hyperledger/production

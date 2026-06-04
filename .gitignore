@@ -1,0 +1,8 @@
+# Binários oficiais baixados (reproduzíveis via download; não versionar)
+/bin/
+
+# Material criptográfico gerado em runtime
+/network/organizations/fabric-ca/*/
+/network/organizations/ordererOrganizations/
+/network/organizations/peerOrganizations/
+/network/system-genesis-block/
