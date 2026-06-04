@@ -122,6 +122,17 @@ export FABRIC_AUDIT_ROOT=<raiz do fabric-audit>   WATCH_DIR=/algum/dir
 cd client && go run ./cmd/agent -config config/agent.yaml
 ```
 
+## Fase 6 — Testes de integridade / tampering (SPECS §11.6 / §10.1)
+
+Adulteração nas duas camadas do ledger (world state CouchDB e block files), com detecção e
+recuperação. **Critério:** cada cenário detectado e documentado.
+
+```bash
+# rede + chaincode no ar; perturba e restaura apenas peer0.hospital
+N=10 bash ../tests/integrity/tamper_test.sh
+```
+Detalhes e fundamentação em [`tests/integrity/README.md`](../tests/integrity/README.md).
+
 ### Limpeza
 
 ```bash
@@ -139,4 +150,4 @@ cd client && go run ./cmd/agent -config config/agent.yaml
 
 ## Próximas fases
 
-6. Testes de integridade. 7. Benchmarks (Caliper).
+7. Benchmarks de desempenho (Hyperledger Caliper).
