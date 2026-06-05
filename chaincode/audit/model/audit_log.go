@@ -6,7 +6,7 @@ package model
 type AuditLog struct {
 	ActionId            string `json:"actionId"`
 	Timestamp           string `json:"timestamp"`           // RFC3339
-	Operation           string `json:"operation"`           // CREATE | READ | UPDATE | DELETE
+	Operation           string `json:"operation"`           // CREATE | UPDATE | DELETE
 	Resource            string `json:"resource"`            // caminho do recurso afetado
 	Actor               string `json:"actor"`               // identificador do usuário
 	ActorOrg            string `json:"actorOrg"`            // organização do ator
