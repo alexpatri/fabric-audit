@@ -10,11 +10,21 @@ for org in "${ORGS[@]}"; do
   adminport="${ADMIN_PORT[$org]}"
   tls="$(ord_tls "$org")"
   echo "== orderer.$org (admin localhost:$adminport) =="
-  if osnadmin channel list \
-       -o "localhost:$adminport" \
-       --ca-file   "$tls/ca.crt" \
-       --client-cert "$tls/server.crt" \
-       --client-key  "$tls/server.key"; then
+  # Retry: logo após 'docker compose up' o servidor TLS admin do orderer pode levar alguns
+  # segundos para atender (do contrário: "connection reset by peer"). Esperamos até ~30s.
+  ok=""; out=""
+  for _ in $(seq 1 15); do
+    if out="$(osnadmin channel list \
+         -o "localhost:$adminport" \
+         --ca-file   "$tls/ca.crt" \
+         --client-cert "$tls/server.crt" \
+         --client-key  "$tls/server.key" 2>&1)"; then
+      ok=1; break
+    fi
+    sleep 2
+  done
+  echo "$out"
+  if [ -n "$ok" ]; then
     echo "   -> OK"
   else
     echo "   -> FALHA"

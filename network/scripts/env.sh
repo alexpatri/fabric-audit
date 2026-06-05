@@ -60,10 +60,9 @@ admin_msp()     { echo "$(peer_base "$1")/users/Admin@$1.$DOMAIN_SUFFIX/msp"; }
 # ---- Fase 3: chaincode / lifecycle ----
 CHANNEL="audit-channel"
 CC_NAME="audit-chaincode"
-CC_VERSION="1.1"   # Fase 4: validações completas + queries + índices (upgrade)
-CC_SEQUENCE="2"
-CC_LABEL="${CC_NAME}_${CC_VERSION}"
 CC_POLICY="AND('HospitalMSP.peer','GovernoMSP.peer','AuditoriaMSP.peer')"
+# CC_VERSION/CC_SEQUENCE/CC_LABEL são calculados dinamicamente em 04-deploy-chaincode.sh
+# (sequence = próxima disponível: 1 em rede nova, N+1 em upgrade).
 
 # Orderer usado para submeter transações (qualquer um dos 4 BFT serve).
 ORDERER_ENDPOINT="localhost:7050"

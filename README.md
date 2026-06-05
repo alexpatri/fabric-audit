@@ -244,6 +244,66 @@ export FABRIC_AUDIT_ROOT=<raiz do fabric-audit>  WATCH_DIR=/algum/diretorio
 cd client && go run ./cmd/agent -config config/agent.yaml
 ```
 
+### Registro e consulta manuais (CLI)
+
+Escrever usa `peer chaincode invoke` (coleta endosso das **3 orgs** — política `AND` — então exige
+os 3 `--peerAddresses` + um orderer); ler usa `peer chaincode query` (1 peer basta, sem orderer).
+
+**Forma simples — helper `audit-cli.sh`** (funciona em bash e zsh):
+
+```bash
+cd <raiz do fabric-audit>
+source network/scripts/audit-cli.sh hospital      # org: hospital (default) | governo | auditoria
+
+# Escrita (o contentHash SHA-256 é calculado do texto automaticamente)
+audit_register CREATE "/prontuarios/p-007" "alice@hospital" "conteudo v1"
+LAST=$(audit_last_hash "/prontuarios/p-007")
+audit_register UPDATE "/prontuarios/p-007" "alice@hospital" "conteudo v2" "$LAST"
+audit_register DELETE "/prontuarios/p-007" "alice@hospital" "" "$LAST"   # DELETE: conteúdo vazio
+
+# Leitura (encadeie | jq para formatar)
+audit_query        <actionId>
+audit_by_resource  "/prontuarios/p-007"
+audit_by_actor     "alice@hospital"
+audit_by_time      "2026-01-01T00:00:00Z" "2026-12-31T23:59:59Z"
+audit_last_hash    "/prontuarios/p-007"
+```
+
+Regras a respeitar (validações §6.6):
+- `actor` no formato `user@orgkey`, com `orgkey` igual à org carregada
+  (`hospital`→`@hospital`, `governo`→`@governo`, `auditoria`→`@auditoria`).
+- `CREATE`: sem `prev`, com conteúdo. `UPDATE`: `prev = audit_last_hash`. `DELETE`: `prev`
+  obrigatório, conteúdo vazio. `actionId` é gerado único pelo helper.
+- Para registrar como outra org: `source network/scripts/audit-cli.sh governo` (actor passa a `*@governo`).
+
+**Forma crua — `peer` diretamente** (sem helper):
+
+```bash
+ROOT=<raiz do fabric-audit>
+export PATH=$ROOT/bin:$PATH FABRIC_CFG_PATH=$ROOT/bin/config FABRIC_LOGGING_SPEC=error
+PO=$ROOT/network/organizations/peerOrganizations
+OO=$ROOT/network/organizations/ordererOrganizations
+export CORE_PEER_TLS_ENABLED=true CORE_PEER_LOCALMSPID=HospitalMSP \
+  CORE_PEER_MSPCONFIGPATH=$PO/hospital.example.com/users/Admin@hospital.example.com/msp \
+  CORE_PEER_TLS_ROOTCERT_FILE=$PO/hospital.example.com/peers/peer0.hospital.example.com/tls/ca.crt \
+  CORE_PEER_ADDRESS=localhost:7051
+
+# WRITE (RegisterLog): 3 peers (AND) + orderer. Args na ordem:
+#   actionId, timestamp(RFC3339), operation, resource, actor, contentHash(64 hex), previousContentHash, sessionId, sourceHost
+peer chaincode invoke \
+  -o localhost:7050 --ordererTLSHostnameOverride orderer.hospital.example.com --tls \
+  --cafile $OO/hospital.example.com/orderers/orderer.hospital.example.com/tls/ca.crt \
+  -C audit-channel -n audit-chaincode --waitForEvent \
+  --peerAddresses localhost:7051  --tlsRootCertFiles $PO/hospital.example.com/peers/peer0.hospital.example.com/tls/ca.crt \
+  --peerAddresses localhost:9051  --tlsRootCertFiles $PO/governo.example.com/peers/peer0.governo.example.com/tls/ca.crt \
+  --peerAddresses localhost:11051 --tlsRootCertFiles $PO/auditoria.example.com/peers/peer0.auditoria.example.com/tls/ca.crt \
+  -c '{"function":"RegisterLog","Args":["act-'"$(date +%s)"'","'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","CREATE","/r/1","alice@hospital","'"$(printf conteudo | sha256sum | cut -d' ' -f1)"'","","sess","host"]}'
+
+# READ (query): 1 peer, sem orderer
+peer chaincode query -C audit-channel -n audit-chaincode \
+  -c '{"function":"QueryLogsByResource","Args":["/r/1"]}'
+```
+
 ### Limpeza
 
 ```bash

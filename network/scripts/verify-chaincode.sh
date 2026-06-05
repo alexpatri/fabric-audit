@@ -8,15 +8,16 @@ ORD=(-o "$ORDERER_ENDPOINT" --ordererTLSHostnameOverride "$ORDERER_OVERRIDE" --t
 read -ra CONN <<< "$(peer_conn_args)"
 set_peer_globals hospital   # submitter = Admin@hospital (SubmitterMSP=HospitalMSP)
 
-ACTION="act-001"
+ACTION="act-$(date +%s)"   # único (regra 1 de unicidade) — seguro p/ reexecução
 TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 HASH="$(printf 'conteudo-exemplo' | sha256sum | cut -d' ' -f1)"
+ACTOR="alice@hospital"     # convenção user@orgkey casando com o submitter (HospitalMSP) — regra 3
 
 echo "== RegisterLog ($ACTION) — coletando endosso das 3 orgs =="
 # Sucesso = código de saída 0 (com --waitForEvent o CLI só retorna 0 após commit VALID).
 # --waitForEventTimeout amplo: na 1ª invocação os peers constroem/sobem os containers de chaincode.
 if peer chaincode invoke "${ORD[@]}" -C "$CHANNEL" -n "$CC_NAME" "${CONN[@]}" --waitForEvent --waitForEventTimeout 150s \
-     -c "{\"function\":\"RegisterLog\",\"Args\":[\"$ACTION\",\"$TS\",\"CREATE\",\"/records/patient-42\",\"alice\",\"$HASH\",\"\",\"sess-1\",\"host-1\"]}" >/tmp/audit-invoke.log 2>&1; then
+     -c "{\"function\":\"RegisterLog\",\"Args\":[\"$ACTION\",\"$TS\",\"CREATE\",\"/records/patient-42\",\"$ACTOR\",\"$HASH\",\"\",\"sess-1\",\"host-1\"]}" >/tmp/audit-invoke.log 2>&1; then
   echo "   -> RegisterLog OK (committed VALID nos 3 peers)"
 else
   echo "   -> RegisterLog FALHOU:" >&2; tail -5 /tmp/audit-invoke.log >&2; exit 1

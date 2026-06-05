@@ -9,8 +9,17 @@ cd "$NETWORK_DIR"
 export FABRIC_CFG_PATH="$BIN_DIR/config"   # core.yaml (necessário já no package)
 export FABRIC_LOGGING_SPEC=error
 CC_SRC="$ROOT_DIR/chaincode/audit"
-PKG="$NETWORK_DIR/${CC_LABEL}.tar.gz"
 ORD=(-o "$ORDERER_ENDPOINT" --ordererTLSHostnameOverride "$ORDERER_OVERRIDE" --tls --cafile "$(orderer_ca)")
+
+# Detecta a próxima sequence (1 em rede nova; committed+1 em upgrade) e deriva versão/label.
+set_peer_globals hospital
+COMMITTED_SEQ="$(peer lifecycle chaincode querycommitted -C "$CHANNEL" --name "$CC_NAME" --output json 2>/dev/null | jq -r '.sequence // 0' 2>/dev/null || echo 0)"
+[ -z "$COMMITTED_SEQ" ] && COMMITTED_SEQ=0
+CC_SEQUENCE=$((COMMITTED_SEQ + 1))
+CC_VERSION="1.${COMMITTED_SEQ}"            # rede nova -> 1.0 (seq 1); após 1º commit -> 1.1 (seq 2)
+CC_LABEL="${CC_NAME}_${CC_VERSION}"
+PKG="$NETWORK_DIR/${CC_LABEL}.tar.gz"
+echo ">> deploy de $CC_NAME versão $CC_VERSION, sequence $CC_SEQUENCE (committed atual: $COMMITTED_SEQ)"
 
 # 0) Garante deps vendorizadas (build offline no ccenv).
 echo ">> go mod vendor (deps hermetizadas)"
@@ -59,4 +68,4 @@ peer lifecycle chaincode commit "${ORD[@]}" \
 echo ">> querycommitted"
 peer lifecycle chaincode querycommitted --channelID "$CHANNEL" --name "$CC_NAME"
 
-echo ">> Fase 3: chaincode '$CC_NAME' v$CC_VERSION (seq $CC_SEQUENCE) committed com política AND."
+echo ">> chaincode '$CC_NAME' v$CC_VERSION (seq $CC_SEQUENCE) committed com política AND."
