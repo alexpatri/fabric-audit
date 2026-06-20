@@ -28,8 +28,7 @@ func (c *AuditContract) RegisterLog(
 	contentHash, previousContentHash, sessionId, sourceHost string,
 ) error {
 	stub := ctx.GetStub()
-
-	// Regra 1 — unicidade.
+	
 	existing, err := stub.GetState(actionId)
 	if err != nil {
 		return fmt.Errorf("falha ao ler o ledger: %w", err)
@@ -38,7 +37,6 @@ func (c *AuditContract) RegisterLog(
 		return fmt.Errorf("actionId '%s' já existe (regra 1)", actionId)
 	}
 
-	// Regra 2 — identidade do submitter.
 	mspID, err := ctx.GetClientIdentity().GetMSPID()
 	if err != nil {
 		return fmt.Errorf("falha ao obter MSP do submitter: %w", err)
@@ -47,12 +45,10 @@ func (c *AuditContract) RegisterLog(
 		return err
 	}
 
-	// Regra 3 — coerência ator↔org.
 	if err := validateActorOrg(actor, mspID); err != nil {
 		return err
 	}
 
-	// Regra 4 — timestamp (vs timestamp determinístico da transação).
 	txTs, err := stub.GetTxTimestamp()
 	if err != nil {
 		return fmt.Errorf("falha ao obter timestamp da transação: %w", err)
@@ -60,13 +56,11 @@ func (c *AuditContract) RegisterLog(
 	if err := validateTimestamp(timestamp, txTs.AsTime()); err != nil {
 		return err
 	}
-
-	// Regra 5 — operação.
+	
 	if err := validateOperation(operation); err != nil {
 		return err
 	}
 
-	// Regra 6 — formato dos hashes.
 	if err := validateHashFormat("contentHash", contentHash); err != nil {
 		return err
 	}
@@ -74,7 +68,6 @@ func (c *AuditContract) RegisterLog(
 		return err
 	}
 
-	// Regra 7 — encadeamento de hash (UPDATE consulta o último hash do resource).
 	lastHash := ""
 	if operation == "UPDATE" {
 		lastHash, err = c.GetLastHashForResource(ctx, resource)
@@ -86,7 +79,6 @@ func (c *AuditContract) RegisterLog(
 		return err
 	}
 
-	// Persiste o registro.
 	logEntry := model.AuditLog{
 		ActionId:            actionId,
 		Timestamp:           timestamp,
@@ -108,7 +100,6 @@ func (c *AuditContract) RegisterLog(
 		return fmt.Errorf("falha ao gravar no ledger: %w", err)
 	}
 
-	// Composite keys para as queries por resource e por ator (§6.7).
 	if err := c.putCompositeKey(ctx, indexResource, []string{resource, timestamp, actionId}); err != nil {
 		return err
 	}
